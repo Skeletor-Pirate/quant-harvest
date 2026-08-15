@@ -2,6 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/Skeletor-Pirate/quant-harvest)](https://goreportcard.com/report/github.com/Skeletor-Pirate/quant-harvest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Demo-Live_on_Render-purple.svg)](https://quant-harvest.onrender.com/)
 
 **Quant Harvest** is a cloud-native, carbon-aware control-plane prototype designed for scheduling and executing computationally heavy post-quantum cryptography (PQC) workloads when the energy grid is cleanest.
 
