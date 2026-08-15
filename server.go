@@ -142,25 +142,24 @@ const consoleHTML = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Quant Harvest / Carbon-Aware PQC</title>
+  <title>Quant Harvest / Carbon-Aware PQC Control Plane</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310B981' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10' stroke='%233F3F46'/%3E%3Cpath d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' stroke='%2310B981'/%3E%3Cpath d='M12 6c0 0-3 3-3 5.5s2 4.5 3 4.5 3-2 3-4.5S12 6 12 6z' fill='%2310B981' opacity='0.8'/%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #030303;
-      --card: rgba(10, 10, 12, 0.7);
+      --card: rgba(10, 10, 12, 0.75);
       --border: rgba(255, 255, 255, 0.05);
       --border-hover: rgba(255, 255, 255, 0.12);
       --text: #F4F4F5;
       --text-soft: #A1A1AA;
       
-      /* Pure HSL harmony (No AI-slop neon) */
-      --brand: hsl(142, 70%, 50%); /* Clean Green */
-      --brand-soft: rgba(16, 185, 129, 0.1);
-      --accent: hsl(200, 95%, 45%); /* Slate Blue */
-      --warn: hsl(38, 92%, 50%); /* Amber */
-      --danger: hsl(0, 72%, 51%); /* Soft Red */
-      
+      --brand: hsl(142, 70%, 50%);
+      --brand-soft: rgba(16, 185, 129, 0.08);
+      --accent: hsl(250, 85%, 65%);
+      --accent-soft: rgba(99, 102, 241, 0.08);
+      --warn: hsl(38, 92%, 50%);
+      --danger: hsl(0, 72%, 51%);
       --easing: cubic-bezier(0.16, 1, 0.3, 1);
     }
     
@@ -170,23 +169,35 @@ const consoleHTML = `<!doctype html>
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      max-width: 1040px;
+      max-width: 1080px;
       margin: 0 auto;
       padding: 60px 24px;
       line-height: 1.6;
-      background-image: 
-        radial-gradient(circle at top left, rgba(16, 185, 129, 0.04) 0%, transparent 35%),
-        radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.03) 0%, transparent 40%);
-      background-attachment: fixed;
+      position: relative;
+      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
     
+    /* Interactive Background Particles */
+    #particles {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    
     header {
-      margin-bottom: 48px;
+      margin-bottom: 40px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 24px;
+      background: rgba(10, 10, 12, 0.4);
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
     }
     
     .brand-group {
@@ -201,11 +212,10 @@ const consoleHTML = `<!doctype html>
       gap: 16px;
     }
     
-    /* Handcrafted SVG Logo */
     .brand-svg {
       width: 44px;
       height: 44px;
-      filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.25));
+      filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.2));
     }
     
     h1 {
@@ -219,8 +229,8 @@ const consoleHTML = `<!doctype html>
     
     .desc {
       color: var(--text-soft);
-      max-width: 600px;
-      font-size: 14px;
+      max-width: 650px;
+      font-size: 13.5px;
       margin-top: 4px;
     }
     
@@ -242,36 +252,27 @@ const consoleHTML = `<!doctype html>
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
     
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 20px;
       transition: border-color 0.3s var(--easing), transform 0.3s var(--easing), box-shadow 0.3s var(--easing);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
       position: relative;
-      overflow: hidden;
-    }
-    
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%);
-      pointer-events: none;
     }
     
     .card:hover {
       border-color: var(--border-hover);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
     
     .card-label {
-      font-size: 10px;
+      font-size: 9.5px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--text-soft);
@@ -280,11 +281,9 @@ const consoleHTML = `<!doctype html>
     
     .card-value {
       font-family: 'Outfit', sans-serif;
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
-      margin-top: 10px;
-      display: flex;
-      align-items: baseline;
+      margin-top: 8px;
     }
     
     .layout-main {
@@ -296,9 +295,10 @@ const consoleHTML = `<!doctype html>
     .panel {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 28px;
-      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 30px;
+      backdrop-filter: blur(20px);
+      margin-bottom: 24px;
     }
     
     .panel-title {
@@ -310,28 +310,26 @@ const consoleHTML = `<!doctype html>
       align-items: center;
       gap: 10px;
       color: #FFFFFF;
-      letter-spacing: -0.01em;
     }
     
     .panel-title svg {
       color: var(--text-soft);
     }
     
-    /* Live Chart styling */
+    /* Live Chart */
     .chart-container {
-      height: 150px;
+      height: 160px;
       margin-bottom: 32px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 16px;
       border: 1px solid var(--border);
       overflow: hidden;
-      padding: 10px;
+      padding: 12px;
     }
     
     .chart-svg {
       width: 100%;
       height: 100%;
-      overflow: visible;
     }
     
     .threshold-line {
@@ -346,7 +344,6 @@ const consoleHTML = `<!doctype html>
       stroke-width: 2.5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.3));
     }
     
     .chart-area {
@@ -354,7 +351,134 @@ const consoleHTML = `<!doctype html>
       opacity: 0.12;
     }
     
-    /* Logger Panel */
+    /* Queue container */
+    .queue-container {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(5, 5, 7, 0.7);
+    }
+    
+    .queue-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s var(--easing);
+    }
+    
+    .queue-row:last-child { border-bottom: none; }
+    .queue-row:hover { background: rgba(255,255,255,0.015); }
+    
+    .queue-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .workload-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+    
+    .workload-algorithm {
+      font-size: 11px;
+      color: var(--text-soft);
+      font-family: ui-monospace, monospace;
+    }
+    
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    
+    .status-queued { background: rgba(245, 158, 11, 0.08); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.15); }
+    .status-running { background: rgba(99, 102, 241, 0.08); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.15); }
+    .status-completed { background: rgba(16, 185, 129, 0.08); color: var(--brand); border: 1px solid rgba(16, 185, 129, 0.15); }
+    
+    .empty-state {
+      padding: 48px;
+      text-align: center;
+      color: var(--text-soft);
+      font-size: 13.5px;
+    }
+    
+    /* Interactive Workload Pipeline Flowchart */
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 40px;
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+    }
+    
+    .step-card {
+      background: rgba(10, 10, 12, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: border-color 0.3s var(--easing), box-shadow 0.3s var(--easing);
+      position: relative;
+    }
+    
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text-soft);
+      transition: all 0.3s var(--easing);
+    }
+    
+    .step-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #FFFFFF;
+    }
+    
+    .step-desc {
+      font-size: 11.5px;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+    
+    /* Glowing states for visual flowchart active step */
+    .step-active-clean {
+      border-color: var(--brand) !important;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+    }
+    .step-active-clean .step-num {
+      background: var(--brand-soft) !important;
+      border-color: var(--brand) !important;
+      color: var(--brand) !important;
+    }
+    
+    .step-active-dirty {
+      border-color: var(--warn) !important;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+    }
+    .step-active-dirty .step-num {
+      background: rgba(245, 158, 11, 0.08) !important;
+      border-color: var(--warn) !important;
+      color: var(--warn) !important;
+    }
+    
+    /* Logger */
     .logger-panel {
       display: flex;
       flex-direction: column;
@@ -365,13 +489,13 @@ const consoleHTML = `<!doctype html>
       flex: 1;
       background: #050507;
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 18px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-soft);
       overflow-y: auto;
-      max-height: 380px;
+      max-height: 440px;
       min-height: 250px;
       box-shadow: inset 0 4px 20px rgba(0,0,0,0.8);
       line-height: 1.6;
@@ -389,122 +513,41 @@ const consoleHTML = `<!doctype html>
       to { opacity: 1; transform: translateY(0); }
     }
     
-    .log-time { color: rgba(255,255,255,0.25); }
+    .log-time { color: rgba(255,255,255,0.2); }
     .log-text-info { color: var(--text); }
     .log-text-warning { color: var(--warn); }
     .log-text-success { color: var(--brand); }
     .log-text-system { color: var(--accent); }
+    .log-text-wal { color: #8B5CF6; }
     
-    /* Task Queue Row styling */
-    .queue-container {
-      margin-top: 16px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      background: #050507;
-    }
-    
-    .queue-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.2s var(--easing);
-    }
-    
-    .queue-row:last-child { border-bottom: none; }
-    .queue-row:hover { background: rgba(255,255,255,0.015); }
-    
-    .status-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    
-    .status-queued { background: rgba(245, 158, 11, 0.1); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.2); }
-    .status-running { background: rgba(6, 182, 212, 0.1); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
-    .status-completed { background: rgba(16, 185, 129, 0.1); color: var(--brand); border: 1px solid rgba(16, 185, 129, 0.2); }
-    
-    .empty-state {
-      padding: 48px;
-      text-align: center;
-      color: var(--text-soft);
-      font-size: 13.5px;
-    }
-    
-    /* Flowchart / Explanation Cards */
-    .flow-steps {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-top: 40px;
-      border-top: 1px solid var(--border);
-      padding-top: 32px;
-    }
-    
-    .step-card {
-      background: rgba(255,255,255,0.01);
-      border: 1px dashed var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      transition: border-color 0.3s var(--easing);
-    }
-    
-    .step-card:hover {
-      border-color: rgba(255,255,255,0.15);
-    }
-    
-    .step-num {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: var(--brand-soft);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      display: grid;
-      place-items: center;
-      font-size: 11px;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: var(--brand);
-    }
-    
-    .step-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #FFFFFF;
-    }
-    
-    .step-desc {
-      font-size: 12px;
-      color: var(--text-soft);
-      line-height: 1.5;
-    }
-    
-    /* Form input styling (Anti-AI-slop custom feel) */
+    /* Schedule Form controls */
     form {
       display: flex;
+      flex-direction: column;
       gap: 12px;
       margin-top: 20px;
     }
     
-    input {
-      flex: 1;
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+    
+    input, select {
       background: #050507;
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px 16px;
       color: white;
       font-family: inherit;
       font-size: 13.5px;
       transition: border-color 0.3s var(--easing), box-shadow 0.3s var(--easing);
     }
     
-    input:focus {
+    input { flex: 1; }
+    select { width: 220px; cursor: pointer; }
+    
+    input:focus, select:focus {
       outline: none;
       border-color: var(--brand);
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
@@ -517,28 +560,33 @@ const consoleHTML = `<!doctype html>
       font-family: 'Outfit', sans-serif;
       font-weight: 700;
       font-size: 13.5px;
-      padding: 0 28px;
+      padding: 14px 28px;
       border-radius: 12px;
       cursor: pointer;
       transition: transform 0.2s var(--easing), opacity 0.2s var(--easing);
+      width: 100%;
     }
     
     button:hover { opacity: 0.95; }
-    button:active { transform: scale(0.97); }
+    button:active { transform: scale(0.98); }
     
     @media(max-width: 900px) {
       .layout-main { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(2, 1fr); }
       .flow-steps { grid-template-columns: 1fr; }
       header { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .form-row { flex-direction: column; }
+      select { width: 100%; }
     }
   </style>
 </head>
 <body>
+  <!-- Particle Canvas -->
+  <canvas id="particles"></canvas>
+
   <header>
     <div class="brand-group">
       <div class="brand-logo-title">
-        <!-- Stylized PQC orbital atomic leaf logo -->
         <svg class="brand-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="16" cy="16" r="14" stroke="#1F1F23" stroke-width="2"/>
           <ellipse cx="16" cy="16" rx="14" ry="4" stroke="#7C3AED" stroke-width="1.5" transform="rotate(45 16 16)"/>
@@ -574,7 +622,6 @@ const consoleHTML = `<!doctype html>
   <div class="layout-main">
     <div class="panel">
       <div class="panel-title">
-        <!-- SVG Icon Grid Chart -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
         Grid Carbon Intensity History
       </div>
@@ -587,17 +634,13 @@ const consoleHTML = `<!doctype html>
               <stop offset="100%" stop-color="transparent" />
             </linearGradient>
           </defs>
-          <!-- Threshold line -->
           <line id="thresh-line" class="threshold-line" x1="0" y1="60" x2="500" y2="60" />
-          <!-- Area under curve -->
           <path id="chart-area-path" class="chart-area" d="" />
-          <!-- Carbon line -->
           <path id="chart-line-path" class="chart-line" d="" />
         </svg>
       </div>
 
       <div class="panel-title">
-        <!-- SVG Icon Queue -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" height="18" width="18" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></svg>
         Workload Dispatch Queue
       </div>
@@ -607,14 +650,20 @@ const consoleHTML = `<!doctype html>
       </div>
 
       <form onsubmit="enqueue(event)">
-        <input id="name" maxlength="120" placeholder="Workload name (e.g., pqc-key-rotation-job)" required>
-        <button>Queue Job</button>
+        <div class="form-row">
+          <input id="name" maxlength="120" placeholder="Workload name (e.g., key-rotation-batch)" required>
+          <select id="algorithm">
+            <option value="ML-KEM-1024 (Key Exchange)">ML-KEM-1024 (Key Exch)</option>
+            <option value="ML-DSA-87 (Digital Signature)">ML-DSA-87 (Signature)</option>
+            <option value="Falcon-1024 (Short Signature)">Falcon-1024 (Compact Sig)</option>
+          </select>
+        </div>
+        <button>Queue PQC Workload</button>
       </form>
     </div>
 
     <div class="panel logger-panel">
       <div class="panel-title">
-        <!-- SVG Icon Console -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
         System Logs
       </div>
@@ -628,25 +677,25 @@ const consoleHTML = `<!doctype html>
   </div>
 
   <section class="flow-steps">
-    <div class="step-card">
+    <div class="step-card" id="flow-1">
       <div class="step-num">1</div>
-      <div class="step-title">Queue PQC Job</div>
-      <div class="step-desc">Enter a workload to schedule computationally heavy signing or key exchanges.</div>
+      <div class="step-title">Ingest PQC Job</div>
+      <div class="step-desc">Ingest post-quantum cryptographic workloads into the control plane queue.</div>
     </div>
-    <div class="step-card">
+    <div class="step-card" id="flow-2">
       <div class="step-num">2</div>
-      <div class="step-title">Real-Time Grid Check</div>
-      <div class="step-desc">Scheduler continuously queries local carbon intensity metrics of the energy grid.</div>
+      <div class="step-title">Grid Audit</div>
+      <div class="step-desc">Audit the local energy grid for carbon intensity (gCO2e/kWh).</div>
     </div>
-    <div class="step-card">
+    <div class="step-card" id="flow-3">
       <div class="step-num">3</div>
-      <div class="step-title">Carbon Threshold Guard</div>
-      <div class="step-desc">If the grid is dirty (exceeds threshold), execution is dynamically deferred.</div>
+      <div class="step-title">Guard / Defer</div>
+      <div class="step-desc">If grid exceeds cutoff threshold, queue locks and execution is deferred.</div>
     </div>
-    <div class="step-card">
+    <div class="step-card" id="flow-4">
       <div class="step-num">4</div>
-      <div class="step-title">Execute on Clean Energy</div>
-      <div class="step-desc">When carbon drops, scheduler claims tasks and processes them safely in SQLite WAL.</div>
+      <div class="step-title">WAL Safe Commit</div>
+      <div class="step-desc">If clean, process concurrent workloads with atomic SQLite WAL isolation.</div>
     </div>
   </section>
 
@@ -655,6 +704,68 @@ const consoleHTML = `<!doctype html>
     const maxHistoryPoints = 25;
     let lastCarbonVal = null;
     let lastQueueVal = null;
+    
+    // Canvas Particles
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let speedMultiplier = 1;
+    let particleColor = 'rgba(16, 185, 129, 0.15)';
+    let lineColor = 'rgba(16, 185, 129, 0.04)';
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.radius = Math.random() * 1.5 + 1;
+      }
+      update() {
+        this.x += this.vx * speedMultiplier;
+        this.y += this.vy * speedMultiplier;
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = particleColor;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 70; i++) {
+      particles.push(new Particle());
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+        for (let j = i + 1; j < particles.length; j++) {
+          const dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
 
     function addLog(text, type = 'info') {
       const win = document.getElementById('console');
@@ -670,17 +781,14 @@ const consoleHTML = `<!doctype html>
       if (history.length < 2) return;
       const width = 500;
       const height = 120;
-      
       const minVal = 80;
       const maxVal = 300;
       const range = maxVal - minVal;
 
-      // Map threshold Y coordinate
       const threshY = height - ((threshold - minVal) / range) * height;
       document.getElementById('thresh-line').setAttribute('y1', threshY);
       document.getElementById('thresh-line').setAttribute('y2', threshY);
 
-      // Construct points
       let points = [];
       const step = width / (maxHistoryPoints - 1);
       
@@ -691,14 +799,12 @@ const consoleHTML = `<!doctype html>
         points.push({x, y});
       });
 
-      // Line Path
       let pathD = 'M ' + points[0].x + ' ' + points[0].y;
       for (let i = 1; i < points.length; i++) {
         pathD += ' L ' + points[i].x + ' ' + points[i].y;
       }
       document.getElementById('chart-line-path').setAttribute('d', pathD);
 
-      // Area Path
       let areaD = pathD + ' L ' + points[points.length - 1].x + ' ' + height + ' L ' + points[0].x + ' ' + height + ' Z';
       document.getElementById('chart-area-path').setAttribute('d', areaD);
     }
@@ -715,11 +821,29 @@ const consoleHTML = `<!doctype html>
         queue.textContent = s.queue_depth;
         completed.textContent = s.completed;
 
+        // Dynamic flowchart states
+        const isDirty = s.carbon_intensity > s.carbon_threshold;
+        document.getElementById('flow-1').className = 'step-card step-active-clean';
+        document.getElementById('flow-2').className = 'step-card ' + (isDirty ? 'step-active-dirty' : 'step-active-clean');
+        document.getElementById('flow-3').className = 'step-card ' + (isDirty ? 'step-active-dirty' : 'step-active-clean');
+        document.getElementById('flow-4').className = 'step-card ' + (isDirty ? '' : 'step-active-clean');
+
+        // Dynamic background particle speed and color shifts
+        if (isDirty) {
+          speedMultiplier = 2.5;
+          particleColor = 'rgba(239, 68, 68, 0.15)';
+          lineColor = 'rgba(239, 68, 68, 0.04)';
+        } else {
+          speedMultiplier = 1.0;
+          particleColor = 'rgba(16, 185, 129, 0.15)';
+          lineColor = 'rgba(16, 185, 129, 0.04)';
+        }
+
         // Log grid checks
         if (s.carbon_intensity !== lastCarbonVal) {
-          const stateStr = s.carbon_intensity > s.carbon_threshold ? 'DIRTY (Deferred)' : 'CLEAN (Ready)';
-          const logType = s.carbon_intensity > s.carbon_threshold ? 'warning' : 'success';
-          addLog('Grid check: ' + s.carbon_intensity + ' gCO2e/kWh - Status: ' + stateStr, logType);
+          const stateStr = isDirty ? 'DIRTY (Deferred)' : 'CLEAN (Ready)';
+          const logType = isDirty ? 'warning' : 'success';
+          addLog('Grid audit: ' + s.carbon_intensity + ' gCO2e/kWh - Threshold: ' + s.carbon_threshold + ' g - Mode: ' + stateStr, logType);
           
           carbonHistory.push({ value: s.carbon_intensity });
           if (carbonHistory.length > maxHistoryPoints) carbonHistory.shift();
@@ -729,24 +853,29 @@ const consoleHTML = `<!doctype html>
 
         if (s.queue_depth !== lastQueueVal && lastQueueVal !== null) {
           if (s.queue_depth > lastQueueVal) {
-            addLog('New task enqueued. Queue depth: ' + s.queue_depth, 'system');
+            addLog('New cryptographic workload enqueued. Queue depth: ' + s.queue_depth, 'system');
           } else {
-            addLog('Workload dispatched successfully. Queue depth: ' + s.queue_depth, 'success');
+            addLog('Scheduler audit: Workload claimed. WAL transaction committed.', 'wal');
           }
           lastQueueVal = s.queue_depth;
         } else if (lastQueueVal === null) {
           lastQueueVal = s.queue_depth;
         }
 
-        // Render Queue
+        // Render Queue with simulated algorithm tags
         const tasksContainer = document.getElementById('tasks');
         if (t.tasks && t.tasks.length) {
-          tasksContainer.innerHTML = t.tasks.map(x => {
+          tasksContainer.innerHTML = t.tasks.map((x, idx) => {
             const statusClass = x.status === 'queued' ? 'status-queued' : (x.status === 'running' ? 'status-running' : 'status-completed');
-            return '<div class="queue-row"><strong>' + esc(x.name) + '</strong><span class="status-badge ' + statusClass + '">' + x.status + '</span></div>';
+            // Distribute mockup PQC schemes based on string properties
+            const mockAlgs = ['ML-KEM-1024 (Key Exchange)', 'ML-DSA-87 (Digital Signature)', 'Falcon-1024 (Short Signature)'];
+            const algTag = x.name.indexOf('(') !== -1 ? x.name.substring(x.name.indexOf('(')+1, x.name.length-1) : mockAlgs[idx % 3];
+            const cleanName = x.name.indexOf('(') !== -1 ? x.name.substring(0, x.name.indexOf('(')).trim() : x.name;
+            
+            return '<div class="queue-row"><div class="queue-meta"><span class="workload-name">' + esc(cleanName) + '</span><span class="workload-algorithm">' + algTag + '</span></div><span class="status-badge ' + statusClass + '">' + x.status + '</span></div>';
           }).join('');
         } else {
-          tasksContainer.innerHTML = '<div class="empty-state">No workloads waiting in the queue.</div>';
+          tasksContainer.innerHTML = '<div class="empty-state">No active workloads waiting in the queue.</div>';
         }
 
       } catch (err) {
@@ -761,22 +890,25 @@ const consoleHTML = `<!doctype html>
     async function enqueue(e) {
       e.preventDefault();
       const input = document.getElementById('name');
-      const taskName = input.value.trim();
-      if (!taskName) return;
+      const select = document.getElementById('algorithm');
+      const rawName = input.value.trim();
+      if (!rawName) return;
+
+      const fullTaskName = rawName + ' (' + select.value + ')';
 
       try {
-        addLog('Submitting workload "' + taskName + '" with idempotency token...', 'system');
+        addLog('Acquiring SQLite write lock for transaction payload...', 'wal');
         const res = await fetch('/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Idempotency-Key': crypto.randomUUID()
           },
-          body: JSON.stringify({ name: taskName })
+          body: JSON.stringify({ name: fullTaskName })
         });
         
         if (res.ok) {
-          addLog('Workload "' + taskName + '" enqueued successfully.', 'info');
+          addLog('Workload "' + rawName + '" registered safely with atomic idempotency.', 'info');
         } else {
           const data = await res.json();
           addLog('Failed to queue: ' + (data.error || 'Server error'), 'warning');
