@@ -1,0 +1,7 @@
+# Q-HARVEST configuration
+cloud_provider: "gcp"
+region: "us-central1"
+instance_type: "e2-standard-4"
+spot_enabled: true
+carbon_threshold: 200  # mgCO2e/kWh, run tasks when below this
+pqc_algorithm: "Kyber512"

@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qharvest
+  labels:
+    app: qharvest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qharvest
+  template:
+    metadata:
+      labels:
+        app: qharvest
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: qharvest
+          image: ghcr.io/your-org/qharvest:latest
+          args: ["-store", "/data/qharvest.db"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: QHARVEST_MAX_CONCURRENCY
+              value: "2"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: qharvest-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qharvest-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qharvest
+spec:
+  selector:
+    app: qharvest
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
