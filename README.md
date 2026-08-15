@@ -1,6 +1,7 @@
 # ⚡ Quant Harvest
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/Skeletor-Pirate/quant-harvest)](https://goreportcard.com/report/github.com/Skeletor-Pirate/quant-harvest)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **Quant Harvest** is a cloud-native, carbon-aware control-plane prototype designed for scheduling and executing computationally heavy post-quantum cryptography (PQC) workloads when the energy grid is cleanest.
 
@@ -118,4 +119,10 @@ kubectl apply -f deploy/kubernetes.yaml
 
 > [!WARNING]
 > The current cryptographic boundary defined in `pqc.go` is an envelope representation for scheduling testing. Vetted implementations of ML-KEM/FIPS 203 standards must be imported into `pqc.go` before using this system in production cryptographic environments.
+
+---
+
+## 📄 License
+
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details.
 
