@@ -41,6 +41,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/healthz", s.handleHealth)
 	mux.HandleFunc("/readyz", s.handleReady)
 	mux.HandleFunc("/metrics", s.handleMetrics)
+	
+	// Serve static assets (js libs, etc)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	
 	return withHeaders(mux)
 }
 
