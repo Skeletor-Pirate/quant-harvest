@@ -9,10 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- GSAP Core & ScrollTrigger (Loaded Locally) -->
+  <!-- GSAP Core & ScrollTrigger (Loaded Locally) -->
   <script src="/static/js/gsap.min.js"></script>
   <script src="/static/js/ScrollTrigger.min.js"></script>
-  <!-- Three.js for WebGL Particles (Loaded Locally) -->
-  <script src="/static/js/three.min.js"></script>
 
   <style>
     :root {
@@ -88,12 +87,15 @@
       opacity: 0.5;
     }
     
-    /* WebGL Background */
-    #webgl-container {
+    /* Video Background */
+    #bg-video {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
+      object-fit: cover;
       z-index: 0;
       pointer-events: none;
+      opacity: 0.6;
+      transition: filter 1s var(--easing);
     }
     
     .scroll-container { position: relative; z-index: 1; }
@@ -377,8 +379,8 @@
   <div class="cursor-dot" id="cursorDot"></div>
   <div class="cursor-ring" id="cursorRing"></div>
 
-  <!-- WebGL Canvas for Three.js -->
-  <canvas id="webgl-container"></canvas>
+  <!-- AI Generated Immersive Video Background -->
+  <video id="bg-video" src="/static/media/bg_video.mp4" autoplay loop muted playsinline></video>
 
   <div class="scroll-container">
 
@@ -539,194 +541,6 @@
       el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
     });
 
-    // ===== WEBGL THREE.JS BACKGROUND (LUSION/UNSEEN STYLE) =====
-    let scene, camera, renderer, particles, uniforms;
-    let targetCameraZ = 600;
-    
-    function initWebGL() {
-      const container = document.getElementById('webgl-container');
-      scene = new THREE.Scene();
-      // Add slight fog for depth
-      scene.fog = new THREE.FogExp2(0x030303, 0.001);
-
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
-      camera.position.z = 600;
-
-      renderer = new THREE.WebGLRenderer({ canvas: container, alpha: true, antialias: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
-      renderer.setSize(window.innerWidth, window.innerHeight);
-
-      // Create Particle Geometry
-      const particleCount = window.innerWidth > 900 ? 30000 : 10000;
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(particleCount * 3);
-      const randoms = new Float32Array(particleCount);
-      
-      for(let i=0; i<particleCount; i++) {
-        // Spherical distribution
-        const r = 800 * Math.cbrt(Math.random());
-        const theta = Math.random() * 2 * Math.PI;
-        const phi = Math.acos(2 * Math.random() - 1);
-        positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
-        positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-        positions[i*3+2] = r * Math.cos(phi);
-        randoms[i] = Math.random();
-      }
-      
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
-
-      // Custom Shader Material for fluid/magnetic look
-      uniforms = {
-        uTime: { value: 0 },
-        uMouse: { value: new THREE.Vector3(0,0,0) },
-        uColor: { value: new THREE.Color('#3b82f6') }
-      };
-
-      const material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: `
-          uniform float uTime;
-          uniform vec3 uMouse;
-          attribute float aRandom;
-          varying float vAlpha;
-          varying vec3 vPos;
-          
-          vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-          vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-          float snoise(vec3 v){ 
-            const vec2  C = vec2(1.0/6.0, 1.0/3.0);
-            const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-            vec3 i  = floor(v + dot(v, C.yyy));
-            vec3 x0 = v - i + dot(i, C.xxx);
-            vec3 g = step(x0.yzx, x0.xyz);
-            vec3 l = 1.0 - g;
-            vec3 i1 = min(g.xyz, l.zxy);
-            vec3 i2 = max(g.xyz, l.zxy);
-            vec3 x1 = x0 - i1 + 1.0 * C.xxx;
-            vec3 x2 = x0 - i2 + 2.0 * C.xxx;
-            vec3 x3 = x0 - 1.0 + 3.0 * C.xxx;
-            i = mod(i, 289.0); 
-            vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-            float n_ = 1.0/7.0;
-            vec3 ns = n_ * D.wyz - D.xzx;
-            vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
-            vec4 x_ = floor(j * ns.z);
-            vec4 y_ = floor(j - 7.0 * x_);
-            vec4 x = x_ *ns.x + ns.yyyy;
-            vec4 y = y_ *ns.x + ns.yyyy;
-            vec4 h = 1.0 - abs(x) - abs(y);
-            vec4 b0 = vec4(x.xy, y.xy);
-            vec4 b1 = vec4(x.zw, y.zw);
-            vec4 s0 = floor(b0)*2.0 + 1.0;
-            vec4 s1 = floor(b1)*2.0 + 1.0;
-            vec4 sh = -step(h, vec4(0.0));
-            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-            vec3 p0 = vec3(a0.xy,h.x);
-            vec3 p1 = vec3(a0.zw,h.y);
-            vec3 p2 = vec3(a1.xy,h.z);
-            vec3 p3 = vec3(a1.zw,h.w);
-            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-            vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-            m = m * m;
-            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-          }
-
-          void main() {
-            vec3 pos = position;
-            
-            // FBM Organic fluid distortion
-            float noiseFreq = 0.002;
-            float noiseAmp = 120.0;
-            vec3 noisePos = vec3(pos.x * noiseFreq + uTime * 0.1, pos.y * noiseFreq + uTime * 0.15, pos.z * noiseFreq);
-            pos.x += snoise(noisePos) * noiseAmp;
-            pos.y += snoise(noisePos + vec3(100.0)) * noiseAmp;
-            pos.z += snoise(noisePos + vec3(200.0)) * noiseAmp;
-            
-            // Mouse repulsion physics
-            float dist = distance(pos, uMouse);
-            if(dist < 200.0) {
-              vec3 dir = normalize(pos - uMouse);
-              pos += dir * (200.0 - dist) * 0.8;
-            }
-            
-            vPos = pos;
-            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-            gl_PointSize = (3.0 + aRandom * 4.0) * (600.0 / -mvPosition.z);
-            gl_Position = projectionMatrix * mvPosition;
-            vAlpha = 0.2 + aRandom * 0.8;
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 uColor;
-          varying float vAlpha;
-          varying vec3 vPos;
-          void main() {
-            float dist = distance(gl_PointCoord, vec2(0.5));
-            if(dist > 0.5) discard;
-            float strength = smoothstep(0.5, 0.0, dist);
-            
-            // Add a vibrant core and deeper edges based on Z depth
-            vec3 coreColor = mix(uColor, vec3(1.0, 1.0, 1.0), 0.4);
-            vec3 finalColor = mix(uColor, coreColor, strength);
-            
-            gl_FragColor = vec4(finalColor, strength * vAlpha);
-          }
-        `,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-      });
-
-      particles = new THREE.Points(geometry, material);
-      scene.add(particles);
-
-      window.addEventListener('resize', onWindowResize);
-      
-      // Map screen mouse coordinates to 3D world space
-      window.addEventListener('mousemove', (e) => {
-        const vec = new THREE.Vector3();
-        const pos = new THREE.Vector3();
-        vec.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1, 0.5);
-        vec.unproject(camera);
-        vec.sub(camera.position).normalize();
-        const distance = -camera.position.z / vec.z;
-        pos.copy(camera.position).add(vec.multiplyScalar(distance));
-        uniforms.uMouse.value.copy(pos);
-      });
-
-      animateWebGL();
-    }
-
-    function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    let clock;
-    function animateWebGL() {
-      if (!clock) clock = new THREE.Clock();
-      requestAnimationFrame(animateWebGL);
-      const elapsedTime = clock.getElapsedTime();
-      uniforms.uTime.value = elapsedTime;
-      
-      // Smoothly rotate the entire particle cloud
-      particles.rotation.y = elapsedTime * 0.05;
-      particles.rotation.z = elapsedTime * 0.02;
-      
-      // Smooth camera interpolation (driven by ScrollTrigger later)
-      camera.position.z += (targetCameraZ - camera.position.z) * 0.05;
-      
-      renderer.render(scene, camera);
-    }
-
-    try {
-      if (typeof THREE !== 'undefined') initWebGL();
-    } catch(e) { console.warn("WebGL initialization failed", e); }
-
     // ===== GSAP & SCROLL ORCHESTRATION =====
     try {
       if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
@@ -740,15 +554,14 @@
           .from('.hero-cta', { y: 30, opacity: 0, duration: 1.5 }, '-=1.2')
           .from('.scroll-cue', { opacity: 0, duration: 2 }, '-=1');
 
-        // Scroll-driven camera plunge (fly into the particles)
+        // Scroll-driven video scaling (replaces WebGL plunge)
         ScrollTrigger.create({
           trigger: 'body',
           start: 'top top',
           end: 'bottom bottom',
           scrub: 1,
           onUpdate: (self) => {
-            // Move camera from Z:600 to Z:100 as user scrolls
-            targetCameraZ = 600 - (self.progress * 500);
+            document.getElementById('bg-video').style.transform = `scale(${1 + (self.progress * 0.2)})`;
           }
         });
 
@@ -839,14 +652,12 @@
         document.getElementById('flow-3').className = 'timeline-item ' + (isDirty ? 'timeline-active-warn' : 'timeline-active-ok');
         document.getElementById('flow-4').className = 'timeline-item ' + (isDirty ? '' : 'timeline-active-ok');
         
-        // Dynamic WebGL particle color change based on grid status
-        if (typeof uniforms !== 'undefined') {
-          gsap.to(uniforms.uColor.value, {
-            r: isDirty ? 239/255 : 59/255,
-            g: isDirty ? 68/255 : 130/255,
-            b: isDirty ? 68/255 : 246/255,
-            duration: 1
-          });
+        // Dynamic Video filter change based on grid status
+        const bgVid = document.getElementById('bg-video');
+        if (isDirty) {
+          bgVid.style.filter = 'hue-rotate(300deg) saturate(2) brightness(0.8)';
+        } else {
+          bgVid.style.filter = 'none';
         }
 
         if (s.carbon_intensity !== lastCarbonVal) {
