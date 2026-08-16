@@ -241,8 +241,6 @@
     
     .h-panel-inner {
       max-width: 640px;
-      opacity: 0;
-      transform: translateY(30px);
     }
     
     .h-panel-num {
@@ -311,8 +309,6 @@
     }
     
     .ticker-item {
-      opacity: 0;
-      transform: translateY(20px);
     }
     
     .ticker-val {
@@ -735,92 +731,62 @@
   </div>
 
   <script>
-    gsap.registerPlugin(ScrollTrigger);
+    // ===== GSAP ANIMATIONS (graceful enhancement - dashboard works without it) =====
+    try {
+    if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+      gsap.registerPlugin(ScrollTrigger);
 
-    // ===== HERO ANIMATIONS (GSAP Timeline) =====
-    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    heroTl.from('.hero-badge', { y: 20, opacity: 0, duration: 0.8 })
-      .from('.hero-title', { y: 40, opacity: 0, duration: 1.2, ease: 'power4.out' }, '-=0.5')
-      .from('.hero-sub', { y: 20, opacity: 0, duration: 0.8 }, '-=0.7')
-      .from('.hero-cta', { y: 20, opacity: 0, duration: 0.8 }, '-=0.5')
-      .from('.scroll-cue', { opacity: 0, duration: 1 }, '-=0.3');
+      // Hero entrance animations
+      const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      heroTl.from('.hero-badge', { y: 20, opacity: 0, duration: 0.8 })
+        .from('.hero-title', { y: 40, opacity: 0, duration: 1.2, ease: 'power4.out' }, '-=0.5')
+        .from('.hero-sub', { y: 20, opacity: 0, duration: 0.8 }, '-=0.7')
+        .from('.hero-cta', { y: 20, opacity: 0, duration: 0.8 }, '-=0.5')
+        .from('.scroll-cue', { opacity: 0, duration: 1 }, '-=0.3');
 
-    // Parallax hero title on scroll
-    gsap.to('.hero-title', {
-      y: -80,
-      opacity: 0.3,
-      ease: 'none',
-      scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true }
-    });
-    gsap.to('.hero-sub', {
-      y: -40,
-      opacity: 0,
-      ease: 'none',
-      scrollTrigger: { trigger: '.hero', start: '30% top', end: 'bottom top', scrub: true }
-    });
+      // Parallax hero title on scroll
+      gsap.to('.hero-title', { y: -80, opacity: 0.3, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
+      gsap.to('.hero-sub', { y: -40, opacity: 0, ease: 'none', scrollTrigger: { trigger: '.hero', start: '30% top', end: 'bottom top', scrub: true } });
 
-    // ===== HORIZONTAL PINNED SCROLL (GSAP ScrollTrigger) =====
-    const track = document.getElementById('horizontalTrack');
-    const panels = gsap.utils.toArray('[data-h-panel]');
+      // Horizontal pinned scroll
+      const track = document.getElementById('horizontalTrack');
+      const panels = gsap.utils.toArray('[data-h-panel]');
+      // Set initial hidden state for GSAP reveal
+      panels.forEach(p => { p.style.opacity = '0'; p.style.transform = 'translateY(30px)'; });
 
-    gsap.to(track, {
-      x: () => -(track.scrollWidth - window.innerWidth),
-      ease: 'none',
-      scrollTrigger: {
+      gsap.to(track, {
+        x: () => -(track.scrollWidth - window.innerWidth),
+        ease: 'none',
+        scrollTrigger: { trigger: '.horizontal-section', pin: true, scrub: 1, end: () => '+=' + (track.scrollWidth - window.innerWidth), invalidateOnRefresh: true }
+      });
+
+      ScrollTrigger.create({
         trigger: '.horizontal-section',
-        pin: true,
-        scrub: 1,
+        start: 'top top',
         end: () => '+=' + (track.scrollWidth - window.innerWidth),
-        invalidateOnRefresh: true
-      }
-    });
-
-    // Reveal each panel content as it enters viewport
-    panels.forEach((panel) => {
-      gsap.to(panel, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: panel,
-          containerAnimation: gsap.getById ? undefined : undefined,
-          start: 'left 80%',
-          toggleActions: 'play none none none',
-          horizontal: true
+        onUpdate: (self) => {
+          const progress = self.progress;
+          panels.forEach((panel, i) => {
+            const panelStart = i / panels.length;
+            const panelEnd = (i + 0.6) / panels.length;
+            if (progress >= panelStart && progress <= panelEnd) {
+              const lp = (progress - panelStart) / (panelEnd - panelStart);
+              gsap.set(panel, { opacity: Math.min(lp * 2, 1), y: 30 * (1 - Math.min(lp * 2, 1)) });
+            }
+          });
         }
       });
-    });
 
-    // Simpler approach: animate panels on the horizontal scroll progress
-    ScrollTrigger.create({
-      trigger: '.horizontal-section',
-      start: 'top top',
-      end: () => '+=' + (track.scrollWidth - window.innerWidth),
-      onUpdate: (self) => {
-        const progress = self.progress;
-        panels.forEach((panel, i) => {
-          const panelStart = i / panels.length;
-          const panelEnd = (i + 0.6) / panels.length;
-          if (progress >= panelStart && progress <= panelEnd) {
-            const localProgress = (progress - panelStart) / (panelEnd - panelStart);
-            gsap.set(panel, { opacity: Math.min(localProgress * 2, 1), y: 30 * (1 - Math.min(localProgress * 2, 1)) });
-          }
-        });
-      }
-    });
-
-    // ===== TICKER ANIMATIONS =====
-    gsap.utils.toArray('.ticker-item').forEach((item, i) => {
-      gsap.to(item, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: i * 0.15,
-        ease: 'power2.out',
-        scrollTrigger: { trigger: item, start: 'top 85%', toggleActions: 'play none none none' }
+      // Ticker staggered reveal
+      gsap.utils.toArray('.ticker-item').forEach((item, i) => {
+        item.style.opacity = '0'; item.style.transform = 'translateY(20px)';
+        gsap.to(item, { opacity: 1, y: 0, duration: 0.8, delay: i * 0.15, ease: 'power2.out', scrollTrigger: { trigger: item, start: 'top 85%', toggleActions: 'play none none none' } });
       });
-    });
+
+      // Canvas fade on scroll
+      ScrollTrigger.create({ trigger: '#dashboard', start: 'top 80%', end: 'top 20%', onUpdate: (self) => { document.getElementById('quantum-net-canvas').style.opacity = 0.5 - (self.progress * 0.4); } });
+    }
+    } catch(e) { console.warn('GSAP not available, animations disabled:', e); }
 
     // ===== 3D CANVAS =====
     const canvas = document.getElementById('quantum-net-canvas');
@@ -847,13 +813,7 @@
       targetAngleX = ((e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)) * 0.3;
     });
 
-    // Scroll-driven canvas fade
-    ScrollTrigger.create({
-      trigger: '#dashboard',
-      start: 'top 80%',
-      end: 'top 20%',
-      onUpdate: (self) => { canvas.style.opacity = 0.5 - (self.progress * 0.4); }
-    });
+    // Canvas fade handled by GSAP guard above
 
     function renderCanvas() {
       angleX += (targetAngleX - angleX) * 0.04;
