@@ -4,22 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Quant Harvest / Carbon-Aware PQC Control Plane</title>
+  <meta name="description" content="A carbon-conscious queue that defers heavy post-quantum cryptographic workloads until local grid energy is clean.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5'%3E%3Cpath d='M12 2L2 22h20L12 2z' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='14' r='3' fill='%233b82f6'/%3E%3C/svg%3E">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <!-- GSAP + ScrollTrigger CDN (free, MIT for non-commercial) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <style>
     :root {
       --bg: #030303;
       --surface: #09090b;
-      --surface-card: #121215;
-      --border: #1f1f23;
-      --border-hover: #2d2d34;
+      --surface-card: #0d0d10;
+      --border: #1a1a1f;
+      --border-hover: #2a2a32;
       --text: #fafafa;
-      --text-muted: #71717a;
+      --text-muted: #52525b;
+      --text-dim: #3f3f46;
       
       --accent: #3b82f6;
-      --accent-soft: rgba(59, 130, 246, 0.08);
+      --accent-glow: rgba(59, 130, 246, 0.15);
       --success: #10b981;
-      --success-soft: rgba(16, 185, 129, 0.08);
+      --success-soft: rgba(16, 185, 129, 0.06);
       --warning: #f59e0b;
       --danger: #ef4444;
       
@@ -27,33 +32,42 @@
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: auto; }
     
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: var(--bg);
+      background: var(--bg);
       color: var(--text);
       line-height: 1.5;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
-    /* Interactive background canvas */
+    /* Film grain overlay for premium texture */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+    
+    /* Interactive 3D canvas */
     #quantum-net-canvas {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
-      z-index: 1;
+      z-index: 0;
       pointer-events: none;
-      opacity: 0.6;
-      transition: opacity 1s var(--easing);
+      opacity: 0.5;
     }
     
-    .scroll-container {
-      position: relative;
-      z-index: 2;
-    }
+    .scroll-container { position: relative; z-index: 1; }
     
-    /* Hero/Apple-style Landing Page */
-    .hero-section {
+    /* ========== HERO ========== */
+    .hero {
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -62,130 +76,275 @@
       text-align: center;
       padding: 24px;
       position: relative;
+      overflow: hidden;
     }
     
-    .hero-pretitle {
-      font-size: 11px;
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.16em;
       color: var(--accent);
       font-weight: 700;
-      margin-bottom: 16px;
-      opacity: 0;
-      transform: translateY(20px);
-      animation: reveal-up 1s var(--easing) forwards;
+      background: var(--accent-glow);
+      border: 1px solid rgba(59, 130, 246, 0.12);
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+      will-change: transform, opacity;
+    }
+    
+    .hero-badge-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+    
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
     
     .hero-title {
       font-family: 'Outfit', sans-serif;
-      font-size: clamp(40px, 7vw, 96px);
+      font-size: clamp(48px, 8vw, 108px);
       font-weight: 900;
-      letter-spacing: -0.04em;
-      line-height: 1.05;
-      color: #ffffff;
+      letter-spacing: -0.05em;
+      line-height: 0.95;
       max-width: 900px;
+      will-change: transform, opacity;
+    }
+    
+    .hero-title .word {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: top;
+      padding-bottom: 4px;
+    }
+    
+    .hero-title .word .char {
+      display: inline-block;
+      will-change: transform;
+    }
+    
+    .hero-title-gradient {
+      background: linear-gradient(180deg, #ffffff 40%, #3f3f46 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .hero-sub {
+      font-size: clamp(14px, 1.8vw, 18px);
+      color: var(--text-muted);
+      max-width: 540px;
+      margin-top: 28px;
+      font-weight: 400;
+      line-height: 1.7;
+      will-change: transform, opacity;
+    }
+    
+    .hero-cta {
+      margin-top: 40px;
+      display: flex;
+      gap: 12px;
+      will-change: transform, opacity;
+    }
+    
+    .btn-primary {
+      background: #fff;
+      color: #000;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s var(--easing), box-shadow 0.3s;
+      letter-spacing: -0.01em;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255, 255, 255, 0.08);
+    }
+    
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 12px 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, transform 0.2s var(--easing);
+    }
+    
+    .btn-ghost:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+      transform: translateY(-2px);
+    }
+    
+    .scroll-cue {
+      position: absolute;
+      bottom: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+    }
+    
+    .scroll-line {
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(180deg, var(--text-dim), transparent);
+      animation: scroll-line-pulse 2s infinite ease-in-out;
+    }
+    
+    @keyframes scroll-line-pulse {
+      0%, 100% { opacity: 1; transform: scaleY(1); }
+      50% { opacity: 0.3; transform: scaleY(0.6); }
+    }
+    
+    /* ========== HORIZONTAL PINNED STORYTELLING ========== */
+    .horizontal-section {
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .horizontal-track {
+      display: flex;
+      width: 400vw;
+      height: 100vh;
+    }
+    
+    .h-panel {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    
+    .h-panel-inner {
+      max-width: 640px;
       opacity: 0;
       transform: translateY(30px);
-      animation: reveal-up 1.2s var(--easing) 0.15s forwards;
-      background: linear-gradient(180deg, #ffffff 50%, #71717a 100%);
+    }
+    
+    .h-panel-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 120px;
+      font-weight: 900;
+      color: rgba(59, 130, 246, 0.04);
+      position: absolute;
+      top: 60px;
+      left: 60px;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+    
+    .h-panel-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    
+    .h-panel-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #ffffff 50%, #52525b 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     
-    .hero-desc {
-      font-size: clamp(14px, 2vw, 18px);
-      color: var(--text-muted);
-      max-width: 600px;
-      margin-top: 24px;
-      opacity: 0;
-      transform: translateY(20px);
-      animation: reveal-up 1s var(--easing) 0.3s forwards;
-    }
-    
-    .scroll-indicator {
-      position: absolute;
-      bottom: 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      animation: bounce 2s infinite ease-in-out;
-      cursor: pointer;
-    }
-    
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    
-    /* Immersive Scroll Sections */
-    .story-section {
-      padding: 120px 24px;
-      max-width: 880px;
-      margin: 0 auto;
-    }
-    
-    .story-card {
-      background: rgba(9, 9, 11, 0.4);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 48px;
-      backdrop-filter: blur(20px);
-      margin-bottom: 48px;
-      opacity: 0;
-      transform: translateY(40px);
-      transition: opacity 1s var(--easing), transform 1.2s var(--easing);
-    }
-    
-    .story-card.active {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    
-    .story-tag {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--accent);
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    
-    .story-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: clamp(24px, 3.5vw, 40px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.15;
-      margin-bottom: 18px;
-      color: #ffffff;
-    }
-    
-    .story-desc {
+    .h-panel-desc {
       font-size: 15px;
       color: var(--text-muted);
-      line-height: 1.6;
+      line-height: 1.75;
+      font-weight: 400;
     }
     
-    /* Interactive Dashboard Section */
-    .dashboard-section {
-      min-height: 100vh;
-      padding: 80px 24px;
+    .h-divider {
+      position: absolute;
+      right: 0;
+      top: 15%;
+      height: 70%;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, var(--border), transparent);
+    }
+    
+    /* ========== METRIC TICKER ========== */
+    .ticker-section {
+      padding: 120px 24px;
+      text-align: center;
       border-top: 1px solid var(--border);
-      background-color: var(--bg);
+      border-bottom: 1px solid var(--border);
       position: relative;
     }
     
-    .container {
-      max-width: 1120px;
-      margin: 0 auto;
+    .ticker-grid {
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      flex-wrap: wrap;
     }
     
-    .dashboard-header {
+    .ticker-item {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    
+    .ticker-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(48px, 6vw, 72px);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      background: linear-gradient(180deg, #ffffff 40%, #3f3f46 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .ticker-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    
+    /* ========== DASHBOARD ========== */
+    .dashboard-section {
+      min-height: 100vh;
+      padding: 80px 24px;
+      position: relative;
+    }
+    
+    .container { max-width: 1120px; margin: 0 auto; }
+    
+    .dash-header {
       margin-bottom: 40px;
       display: flex;
       justify-content: space-between;
@@ -194,46 +353,23 @@
       padding-bottom: 24px;
     }
     
-    .brand-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
     
     .brand-title {
       font-family: 'Outfit', sans-serif;
       font-size: 20px;
       font-weight: 800;
       letter-spacing: -0.01em;
-      color: var(--text);
     }
     
-    .brand-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
+    .brand-sub { font-size: 12px; color: var(--text-muted); }
     
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 700;
-      color: var(--success);
-      background: var(--success-soft);
-      border: 1px solid rgba(16, 185, 129, 0.15);
-      padding: 6px 12px;
-      border-radius: 6px;
-    }
-    
-    .status-dot {
-      width: 6px;
-      height: 6px;
+    .live-dot {
+      width: 6px; height: 6px;
       border-radius: 50%;
       background: var(--success);
       box-shadow: 0 0 8px var(--success);
+      display: inline-block;
     }
     
     .grid-stats {
@@ -248,12 +384,10 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 18px 20px;
-      transition: border-color 0.2s var(--easing);
+      transition: border-color 0.2s var(--easing), transform 0.3s var(--easing);
     }
     
-    .stat-card:hover {
-      border-color: var(--border-hover);
-    }
+    .stat-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
     
     .stat-label {
       font-size: 9.5px;
@@ -268,7 +402,6 @@
       font-size: 26px;
       font-weight: 700;
       margin-top: 6px;
-      color: var(--text);
     }
     
     .layout-main {
@@ -283,7 +416,10 @@
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 24px;
+      transition: border-color 0.2s;
     }
+    
+    .panel:hover { border-color: var(--border-hover); }
     
     .panel-title {
       font-size: 13.5px;
@@ -294,17 +430,13 @@
       gap: 8px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 12px;
-      color: var(--text);
     }
     
-    .panel-title svg {
-      color: var(--text-muted);
-    }
+    .panel-title svg { color: var(--text-muted); }
     
-    /* SVG Chart */
     .chart-box {
       height: 160px;
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(0, 0, 0, 0.25);
       border-radius: 8px;
       border: 1px solid var(--border);
       overflow: hidden;
@@ -312,33 +444,11 @@
       margin-bottom: 24px;
     }
     
-    .chart-svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
+    .chart-svg { width: 100%; height: 100%; overflow: visible; }
+    .chart-line { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .chart-area { fill: url(#chart-grad); opacity: 0.06; }
+    .threshold-line { stroke: var(--danger); stroke-dasharray: 4 4; stroke-width: 1.2; opacity: 0.85; }
     
-    .chart-line {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 2.2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    
-    .chart-area {
-      fill: url(#chart-grad);
-      opacity: 0.08;
-    }
-    
-    .threshold-line {
-      stroke: var(--danger);
-      stroke-dasharray: 4 4;
-      stroke-width: 1.2;
-      opacity: 0.85;
-    }
-    
-    /* Developer Queue Table */
     .table-wrapper {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -360,10 +470,7 @@
       border-bottom: 1px solid var(--border);
     }
     
-    .table-body {
-      max-height: 240px;
-      overflow-y: auto;
-    }
+    .table-body { max-height: 240px; overflow-y: auto; }
     
     .table-row {
       display: grid;
@@ -377,17 +484,8 @@
     
     .table-row:last-child { border-bottom: none; }
     .table-row:hover { background: rgba(255, 255, 255, 0.015); }
-    
-    .task-name {
-      font-weight: 500;
-      color: var(--text);
-    }
-    
-    .task-alg {
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    .task-name { font-weight: 500; }
+    .task-alg { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; color: var(--text-muted); }
     
     .status-pill {
       font-size: 10px;
@@ -403,12 +501,7 @@
     .status-running { background: rgba(59, 130, 246, 0.05); color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.15); }
     .status-completed { background: rgba(16, 185, 129, 0.05); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.15); }
     
-    /* Layout forms */
-    form {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
-    }
+    form { display: flex; gap: 10px; margin-top: 16px; }
     
     input, select {
       background: var(--bg);
@@ -423,13 +516,9 @@
     
     input { flex: 1; }
     select { width: 180px; cursor: pointer; }
+    input:focus, select:focus { outline: none; border-color: var(--border-hover); }
     
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--border-hover);
-    }
-    
-    button {
+    button.schedule-btn {
       background: var(--text);
       color: var(--bg);
       border: none;
@@ -441,10 +530,9 @@
       transition: opacity 0.15s, transform 0.1s var(--easing);
     }
     
-    button:hover { opacity: 0.95; }
-    button:active { transform: scale(0.98); }
+    button.schedule-btn:hover { opacity: 0.95; }
+    button.schedule-btn:active { transform: scale(0.98); }
     
-    /* Developer Logs */
     .log-container {
       background: #020203;
       border: 1px solid var(--border);
@@ -458,575 +546,435 @@
       line-height: 1.5;
     }
     
-    .log-item {
-      margin-bottom: 6px;
-      display: flex;
-      gap: 8px;
-    }
-    
-    .log-ts { color: var(--text-muted); }
+    .log-item { margin-bottom: 6px; display: flex; gap: 8px; }
+    .log-ts { color: var(--text-dim); }
     .log-label-info { color: var(--text); }
     .log-label-warn { color: var(--warning); }
     .log-label-ok { color: var(--success); }
     .log-label-sys { color: var(--accent); }
     .log-label-wal { color: #8b5cf6; }
     
-    /* Minimal Visual Workflow Timeline */
-    .timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-top: 16px;
-    }
+    .timeline { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
     
     .timeline-item {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.08);
-      transition: border-color 0.2s var(--easing);
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: rgba(0, 0, 0, 0.08); transition: border-color 0.2s var(--easing);
     }
     
     .timeline-num {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      background: var(--surface-card);
-      border: 1px solid var(--border);
-      display: grid;
-      place-items: center;
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-muted);
+      width: 20px; height: 20px; border-radius: 4px;
+      background: var(--surface-card); border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
     }
     
-    .timeline-content {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
+    .timeline-content { display: flex; flex-direction: column; gap: 2px; }
+    .timeline-title { font-size: 12px; font-weight: 600; }
+    .timeline-desc { font-size: 11px; color: var(--text-muted); }
     
-    .timeline-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-    }
+    .timeline-active-ok { border-color: var(--success) !important; }
+    .timeline-active-ok .timeline-num { border-color: var(--success) !important; color: var(--success) !important; background: var(--success-soft) !important; }
+    .timeline-active-warn { border-color: var(--warning) !important; }
+    .timeline-active-warn .timeline-num { border-color: var(--warning) !important; color: var(--warning) !important; background: rgba(245, 158, 11, 0.05) !important; }
     
-    .timeline-desc {
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      text-align: center;
       font-size: 11px;
-      color: var(--text-muted);
-    }
-    
-    .timeline-active-ok {
-      border-color: var(--success) !important;
-    }
-    .timeline-active-ok .timeline-num {
-      border-color: var(--success) !important;
-      color: var(--success) !important;
-      background: var(--success-soft) !important;
-    }
-    
-    .timeline-active-warn {
-      border-color: var(--warning) !important;
-    }
-    .timeline-active-warn .timeline-num {
-      border-color: var(--warning) !important;
-      color: var(--warning) !important;
-      background: rgba(245, 158, 11, 0.05) !important;
-    }
-    
-    @keyframes reveal-up {
-      to { opacity: 1; transform: translateY(0); }
+      color: var(--text-dim);
     }
     
     @media(max-width: 900px) {
       .layout-main { grid-template-columns: 1fr; }
       .grid-stats { grid-template-columns: repeat(2, 1fr); }
-      .dashboard-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .dash-header { flex-direction: column; align-items: flex-start; gap: 12px; }
       form { flex-direction: column; }
       select { width: 100%; }
+      .horizontal-track { width: 400vw; }
+      .ticker-grid { gap: 40px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Floating interactive 3D-like quantum network canvas background -->
   <canvas id="quantum-net-canvas"></canvas>
 
   <div class="scroll-container">
-    
-    <!-- Hero / Immersive Storytelling Screen -->
-    <section class="hero-section">
-      <div class="hero-pretitle">Durable & Carbon-Aware Control Plane</div>
-      <div class="hero-title">Quant Harvest</div>
-      <div class="hero-desc">An immersive, carbon-conscious queue that defer heavy post-quantum cryptographic workloads until local grid energy is clean.</div>
-      <div class="scroll-indicator" onclick="scrollToDashboard()">
-        <span>Explore Engine</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+      <div class="hero-badge"><span class="hero-badge-dot"></span> Carbon-Aware Scheduler</div>
+      <h1 class="hero-title hero-title-gradient" id="heroTitle">Quant Harvest</h1>
+      <p class="hero-sub" id="heroSub">Defer heavy post-quantum cryptographic workloads until local grid energy is clean. Atomic. Durable. Emissions-aware.</p>
+      <div class="hero-cta" id="heroCta">
+        <button class="btn-primary" onclick="scrollToDashboard()">Open Console</button>
+        <button class="btn-ghost" onclick="document.querySelector('.horizontal-section').scrollIntoView({behavior:'smooth'})">How It Works</button>
+      </div>
+      <div class="scroll-cue">
+        <span>Scroll</span>
+        <div class="scroll-line"></div>
       </div>
     </section>
 
-    <!-- Narrative scroll cards -->
-    <section class="story-section">
-      <div class="story-card">
-        <div class="story-tag">Core Issue</div>
-        <div class="story-title">The Cryptographic Transition</div>
-        <div class="story-desc">Heavy key exchanges (ML-KEM) and signatures (ML-DSA) consume substantial CPU and computational grid power. Running them blindly triggers local thermal spikes and high carbon footprint on dirty grids.</div>
-      </div>
-
-      <div class="story-card">
-        <div class="story-tag">Our Solution</div>
-        <div class="story-title">Emissions Auditing</div>
-        <div class="story-desc">The scheduler monitors real-time carbon intensity. When local grid carbon emissions exceed safety limits, workloads are gracefully locked inside the SQLite transaction queue.</div>
-      </div>
-
-      <div class="story-card">
-        <div class="story-tag">Execution Gate</div>
-        <div class="story-title">WAL Safe Commit</div>
-        <div class="story-desc">When carbon falls below the threshold, the gate opens. Task threads process jobs concurrently using Write-Ahead Logging for atomic consistency.</div>
+    <!-- ===== HORIZONTAL PINNED SCROLL ===== -->
+    <section class="horizontal-section">
+      <div class="horizontal-track" id="horizontalTrack">
+        <div class="h-panel">
+          <div class="h-panel-num">01</div>
+          <div class="h-panel-inner" data-h-panel>
+            <div class="h-panel-tag">Ingestion</div>
+            <div class="h-panel-title">Post-Quantum Workload Queue</div>
+            <div class="h-panel-desc">ML-KEM key exchanges, ML-DSA digital signatures, and Falcon short signatures are accepted as durable tasks. Each transaction is written atomically into a SQLite Write-Ahead Log.</div>
+          </div>
+          <div class="h-divider"></div>
+        </div>
+        <div class="h-panel">
+          <div class="h-panel-num">02</div>
+          <div class="h-panel-inner" data-h-panel>
+            <div class="h-panel-tag">Emissions Audit</div>
+            <div class="h-panel-title">Real-Time Carbon Grid Sensing</div>
+            <div class="h-panel-desc">The scheduler polls local grid carbon intensity in real-time. When emissions exceed a configurable threshold, heavy computation locks are engaged to prevent wasteful energy consumption.</div>
+          </div>
+          <div class="h-divider"></div>
+        </div>
+        <div class="h-panel">
+          <div class="h-panel-num">03</div>
+          <div class="h-panel-inner" data-h-panel>
+            <div class="h-panel-tag">Threshold Guard</div>
+            <div class="h-panel-title">Adaptive Scheduling Engine</div>
+            <div class="h-panel-desc">When grid carbon is high, queued cryptographic jobs are gracefully deferred. No jobs are lost — the WAL ensures full crash recovery and idempotent replay of every workload.</div>
+          </div>
+          <div class="h-divider"></div>
+        </div>
+        <div class="h-panel">
+          <div class="h-panel-num">04</div>
+          <div class="h-panel-inner" data-h-panel>
+            <div class="h-panel-tag">Execution</div>
+            <div class="h-panel-title">Clean Energy Commit</div>
+            <div class="h-panel-desc">When emissions fall below the threshold, the gate opens. Task threads process jobs concurrently, committing results atomically. Zero data loss. Maximum efficiency.</div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Immersive Developer Dashboard -->
+    <!-- ===== TICKER METRICS ===== -->
+    <section class="ticker-section">
+      <div class="ticker-grid">
+        <div class="ticker-item"><div class="ticker-val" id="t-carbon">—</div><div class="ticker-label">Grid Carbon (gCO2e/kWh)</div></div>
+        <div class="ticker-item"><div class="ticker-val" id="t-threshold">—</div><div class="ticker-label">Emission Cutoff</div></div>
+        <div class="ticker-item"><div class="ticker-val" id="t-queue">—</div><div class="ticker-label">Queued Jobs</div></div>
+        <div class="ticker-item"><div class="ticker-val" id="t-completed">—</div><div class="ticker-label">Completed</div></div>
+      </div>
+    </section>
+
+    <!-- ===== DASHBOARD ===== -->
     <section class="dashboard-section" id="dashboard">
       <div class="container">
-        
-        <header class="dashboard-header">
+        <header class="dash-header">
           <div class="brand-group">
-            <svg style="width: 24px; height: 24px;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 22h20L12 2z" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
-              <circle cx="12" cy="14" r="3" fill="var(--accent)"/>
-            </svg>
-            <div>
-              <span class="brand-title">Operator Console</span>
-              <div class="brand-subtitle">Real-time control plane diagnostics</div>
-            </div>
+            <svg style="width:24px;height:24px" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 22h20L12 2z" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="14" r="3" fill="var(--accent)"/></svg>
+            <div><span class="brand-title">Operator Console</span><div class="brand-sub">Real-time control plane diagnostics</div></div>
           </div>
-          <div class="system-status">
-            <div class="status-dot"></div>
-            System Active
-          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--success);font-weight:700;text-transform:uppercase;letter-spacing:0.05em"><span class="live-dot"></span> System Active</div>
         </header>
 
         <section class="grid-stats">
-          <div class="stat-card">
-            <div class="stat-label">Grid Carbon Intensity</div>
-            <div class="stat-value" id="carbon">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Cutoff Threshold</div>
-            <div class="stat-value" id="threshold">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Queue Depth</div>
-            <div class="stat-value" id="queue">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Completed Jobs</div>
-            <div class="stat-value" id="completed">—</div>
-          </div>
+          <div class="stat-card"><div class="stat-label">Grid Carbon Intensity</div><div class="stat-value" id="carbon">—</div></div>
+          <div class="stat-card"><div class="stat-label">Cutoff Threshold</div><div class="stat-value" id="threshold">—</div></div>
+          <div class="stat-card"><div class="stat-label">Queue Depth</div><div class="stat-value" id="queue">—</div></div>
+          <div class="stat-card"><div class="stat-label">Completed Jobs</div><div class="stat-value" id="completed">—</div></div>
         </section>
 
         <div class="layout-main">
-          <div class="left-col">
+          <div>
             <div class="panel">
-              <div class="panel-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-                Grid Carbon History
-              </div>
-              
+              <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Grid Carbon History</div>
               <div class="chart-box">
                 <svg class="chart-svg" id="chart" viewBox="0 0 500 120" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="var(--accent)" />
-                      <stop offset="100%" stop-color="transparent" />
-                    </linearGradient>
-                  </defs>
-                  <line id="thresh-line" class="threshold-line" x1="0" y1="60" x2="500" y2="60" />
-                  <path id="chart-area-path" class="chart-area" d="" />
-                  <path id="chart-line-path" class="chart-line" d="" />
+                  <defs><linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs>
+                  <line id="thresh-line" class="threshold-line" x1="0" y1="60" x2="500" y2="60"/>
+                  <path id="chart-area-path" class="chart-area" d=""/>
+                  <path id="chart-line-path" class="chart-line" d=""/>
                 </svg>
               </div>
-
-              <div class="panel-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" height="18" width="18" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></svg>
-                Workload Pipeline
-              </div>
-              
+              <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" height="18" width="18" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></svg>Workload Pipeline</div>
               <div class="table-wrapper">
-                <div class="table-header">
-                  <div>Workload Name</div>
-                  <div>PQC Algorithm</div>
-                  <div>Status</div>
-                </div>
-                <div class="table-body" id="tasks">
-                  <div class="empty-state">Loading active queue...</div>
-                </div>
+                <div class="table-header"><div>Workload Name</div><div>PQC Algorithm</div><div>Status</div></div>
+                <div class="table-body" id="tasks"><div>Loading active queue...</div></div>
               </div>
-
               <form onsubmit="enqueue(event)">
                 <input id="name" maxlength="120" placeholder="Job name (e.g., key-rotation-session)" required>
-                <select id="algorithm">
-                  <option value="ML-KEM-1024 (Key Exchange)">ML-KEM-1024 (Kyber)</option>
-                  <option value="ML-DSA-87 (Digital Signature)">ML-DSA-87 (Dilithium)</option>
-                  <option value="Falcon-1024 (Short Signature)">Falcon-1024 (Falcon)</option>
-                </select>
-                <button>Schedule Workload</button>
+                <select id="algorithm"><option value="ML-KEM-1024 (Key Exchange)">ML-KEM-1024 (Kyber)</option><option value="ML-DSA-87 (Digital Signature)">ML-DSA-87 (Dilithium)</option><option value="Falcon-1024 (Short Signature)">Falcon-1024 (Falcon)</option></select>
+                <button class="schedule-btn">Schedule Workload</button>
               </form>
             </div>
           </div>
-
-          <div class="right-col">
+          <div>
             <div class="panel">
-              <div class="panel-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                System Diagnostics
-              </div>
-              <div class="log-container" id="console">
-                <div class="log-item">
-                  <span class="log-ts">[00:00:00]</span>
-                  <span class="log-label-sys">[SYS] Mounting Quant Harvest control plane...</span>
-                </div>
-              </div>
+              <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>System Diagnostics</div>
+              <div class="log-container" id="console"><div class="log-item"><span class="log-ts">[00:00:00]</span><span class="log-label-sys">[SYS] Mounting Quant Harvest control plane...</span></div></div>
             </div>
-
             <div class="panel">
-              <div class="panel-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/></svg>
-                Ingestion Flow
-              </div>
+              <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/></svg>Ingestion Flow</div>
               <div class="timeline">
-                <div class="timeline-item" id="flow-1">
-                  <div class="timeline-num">1</div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">Workload Ingestion</div>
-                    <div class="timeline-desc">PQC signature schemes parsed and buffered.</div>
-                  </div>
-                </div>
-                <div class="timeline-item" id="flow-2">
-                  <div class="timeline-num">2</div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">Grid Carbon Audit</div>
-                    <div class="timeline-desc">Verify local real-time grid emissions.</div>
-                  </div>
-                </div>
-                <div class="timeline-item" id="flow-3">
-                  <div class="timeline-num">3</div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">Threshold Guard</div>
-                    <div class="timeline-desc">Lock scheduler if carbon exceeds cutoff.</div>
-                  </div>
-                </div>
-                <div class="timeline-item" id="flow-4">
-                  <div class="timeline-num">4</div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">Safe WAL Commit</div>
-                    <div class="timeline-desc">Execute claimed transactions concurrently.</div>
-                  </div>
-                </div>
+                <div class="timeline-item" id="flow-1"><div class="timeline-num">1</div><div class="timeline-content"><div class="timeline-title">Workload Ingestion</div><div class="timeline-desc">PQC signature schemes parsed and buffered.</div></div></div>
+                <div class="timeline-item" id="flow-2"><div class="timeline-num">2</div><div class="timeline-content"><div class="timeline-title">Grid Carbon Audit</div><div class="timeline-desc">Verify local real-time grid emissions.</div></div></div>
+                <div class="timeline-item" id="flow-3"><div class="timeline-num">3</div><div class="timeline-content"><div class="timeline-title">Threshold Guard</div><div class="timeline-desc">Lock scheduler if carbon exceeds cutoff.</div></div></div>
+                <div class="timeline-item" id="flow-4"><div class="timeline-num">4</div><div class="timeline-content"><div class="timeline-title">Safe WAL Commit</div><div class="timeline-desc">Execute claimed transactions concurrently.</div></div></div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </section>
 
+    <footer>Quant Harvest · Durable carbon-aware PQC scheduling engine · Built with Go, SQLite WAL, and real-time grid telemetry</footer>
   </div>
 
   <script>
-    let carbonHistory = [];
-    const maxHistoryPoints = 25;
-    let lastCarbonVal = null;
-    let lastQueueVal = null;
+    gsap.registerPlugin(ScrollTrigger);
 
-    // Interactive 3D Canvas visualizer
+    // ===== HERO ANIMATIONS (GSAP Timeline) =====
+    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    heroTl.from('.hero-badge', { y: 20, opacity: 0, duration: 0.8 })
+      .from('.hero-title', { y: 40, opacity: 0, duration: 1.2, ease: 'power4.out' }, '-=0.5')
+      .from('.hero-sub', { y: 20, opacity: 0, duration: 0.8 }, '-=0.7')
+      .from('.hero-cta', { y: 20, opacity: 0, duration: 0.8 }, '-=0.5')
+      .from('.scroll-cue', { opacity: 0, duration: 1 }, '-=0.3');
+
+    // Parallax hero title on scroll
+    gsap.to('.hero-title', {
+      y: -80,
+      opacity: 0.3,
+      ease: 'none',
+      scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true }
+    });
+    gsap.to('.hero-sub', {
+      y: -40,
+      opacity: 0,
+      ease: 'none',
+      scrollTrigger: { trigger: '.hero', start: '30% top', end: 'bottom top', scrub: true }
+    });
+
+    // ===== HORIZONTAL PINNED SCROLL (GSAP ScrollTrigger) =====
+    const track = document.getElementById('horizontalTrack');
+    const panels = gsap.utils.toArray('[data-h-panel]');
+
+    gsap.to(track, {
+      x: () => -(track.scrollWidth - window.innerWidth),
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.horizontal-section',
+        pin: true,
+        scrub: 1,
+        end: () => '+=' + (track.scrollWidth - window.innerWidth),
+        invalidateOnRefresh: true
+      }
+    });
+
+    // Reveal each panel content as it enters viewport
+    panels.forEach((panel) => {
+      gsap.to(panel, {
+        opacity: 1,
+        y: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: panel,
+          containerAnimation: gsap.getById ? undefined : undefined,
+          start: 'left 80%',
+          toggleActions: 'play none none none',
+          horizontal: true
+        }
+      });
+    });
+
+    // Simpler approach: animate panels on the horizontal scroll progress
+    ScrollTrigger.create({
+      trigger: '.horizontal-section',
+      start: 'top top',
+      end: () => '+=' + (track.scrollWidth - window.innerWidth),
+      onUpdate: (self) => {
+        const progress = self.progress;
+        panels.forEach((panel, i) => {
+          const panelStart = i / panels.length;
+          const panelEnd = (i + 0.6) / panels.length;
+          if (progress >= panelStart && progress <= panelEnd) {
+            const localProgress = (progress - panelStart) / (panelEnd - panelStart);
+            gsap.set(panel, { opacity: Math.min(localProgress * 2, 1), y: 30 * (1 - Math.min(localProgress * 2, 1)) });
+          }
+        });
+      }
+    });
+
+    // ===== TICKER ANIMATIONS =====
+    gsap.utils.toArray('.ticker-item').forEach((item, i) => {
+      gsap.to(item, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        delay: i * 0.15,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: item, start: 'top 85%', toggleActions: 'play none none none' }
+      });
+    });
+
+    // ===== 3D CANVAS =====
     const canvas = document.getElementById('quantum-net-canvas');
     const ctx = canvas.getContext('2d');
     let points3D = [];
-    let angleX = 0;
-    let angleY = 0;
-    let targetAngleX = 0;
-    let targetAngleY = 0;
-    let scrollMultiplier = 1;
-    let colorNode = 'rgba(59, 130, 246, 0.4)';
-    let colorLine = 'rgba(59, 130, 246, 0.08)';
+    let angleX = 0, angleY = 0, targetAngleX = 0, targetAngleY = 0;
+    let colorNode = 'rgba(59, 130, 246, 0.35)';
+    let colorLine = 'rgba(59, 130, 246, 0.06)';
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Create 3D spherical coordinate grid points
-    const totalPoints = 90;
-    const sphereRadius = 240;
+    const totalPoints = 80;
+    const sphereRadius = Math.min(window.innerWidth, window.innerHeight) * 0.28;
     for (let i = 0; i < totalPoints; i++) {
       const theta = Math.acos((Math.random() * 2) - 1);
       const phi = Math.random() * Math.PI * 2;
-      points3D.push({
-        x: sphereRadius * Math.sin(theta) * Math.cos(phi),
-        y: sphereRadius * Math.sin(theta) * Math.sin(phi),
-        z: sphereRadius * Math.cos(theta)
-      });
+      points3D.push({ x: sphereRadius * Math.sin(theta) * Math.cos(phi), y: sphereRadius * Math.sin(theta) * Math.sin(phi), z: sphereRadius * Math.cos(theta) });
     }
 
-    // Parallax interaction
     window.addEventListener('mousemove', (e) => {
-      const rx = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
-      const ry = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
-      targetAngleY = rx * 0.4;
-      targetAngleX = ry * 0.4;
+      targetAngleY = ((e.clientX - window.innerWidth / 2) / (window.innerWidth / 2)) * 0.3;
+      targetAngleX = ((e.clientY - window.innerHeight / 2) / (window.innerHeight / 2)) * 0.3;
     });
 
-    // Scroll mapping
-    window.addEventListener('scroll', () => {
-      const scrollPercent = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
-      scrollMultiplier = 1 + scrollPercent * 3.5;
-      
-      // Control background canvas visibility on deep scroll
-      const dashTop = document.getElementById('dashboard').offsetTop;
-      if (window.scrollY > dashTop - 200) {
-        canvas.style.opacity = '0.15';
-      } else {
-        canvas.style.opacity = '0.6';
-      }
+    // Scroll-driven canvas fade
+    ScrollTrigger.create({
+      trigger: '#dashboard',
+      start: 'top 80%',
+      end: 'top 20%',
+      onUpdate: (self) => { canvas.style.opacity = 0.5 - (self.progress * 0.4); }
     });
 
-    function project3D(x, y, z) {
-      const scale = 500 / (500 + z);
-      const px = x * scale + canvas.width / 2;
-      const py = y * scale + canvas.height / 2;
-      return { x: px, y: py, scale };
-    }
-
-    function rotatePoints() {
-      // Smooth interpolation for mouse movements
-      angleX += (targetAngleX - angleX) * 0.05;
-      angleY += (targetAngleY - angleY) * 0.05;
-
-      const cosX = Math.cos(angleX);
-      const sinX = Math.sin(angleX);
-      const cosY = Math.cos(angleY + 0.003 * scrollMultiplier);
-      const sinY = Math.sin(angleY + 0.003 * scrollMultiplier);
-
+    function renderCanvas() {
+      angleX += (targetAngleX - angleX) * 0.04;
+      angleY += (targetAngleY - angleY) * 0.04;
+      const autoRotate = performance.now() * 0.00008;
+      const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+      const cosY = Math.cos(angleY + autoRotate), sinY = Math.sin(angleY + autoRotate);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
       let projected = [];
-
       points3D.forEach(pt => {
-        // Rotate Y
-        let x1 = pt.x * cosY - pt.z * sinY;
-        let z1 = pt.z * cosY + pt.x * sinY;
-        // Rotate X
-        let y1 = pt.y * cosX - z1 * sinX;
-        let z2 = z1 * cosX + pt.y * sinX;
-
-        projected.push(project3D(x1, y1, z2));
+        let x1 = pt.x * cosY - pt.z * sinY, z1 = pt.z * cosY + pt.x * sinY;
+        let y1 = pt.y * cosX - z1 * sinX, z2 = z1 * cosX + pt.y * sinX;
+        const scale = 500 / (500 + z2);
+        projected.push({ x: x1 * scale + canvas.width / 2, y: y1 * scale + canvas.height / 2, scale });
       });
-
-      // Draw connections
-      ctx.lineWidth = 0.8;
+      ctx.lineWidth = 0.6;
       for (let i = 0; i < projected.length; i++) {
         for (let j = i + 1; j < projected.length; j++) {
           const dist = Math.hypot(projected[i].x - projected[j].x, projected[i].y - projected[j].y);
-          if (dist < 110) {
-            ctx.beginPath();
-            ctx.moveTo(projected[i].x, projected[i].y);
-            ctx.lineTo(projected[j].x, projected[j].y);
-            ctx.strokeStyle = colorLine;
-            ctx.stroke();
-          }
+          if (dist < 100) { ctx.beginPath(); ctx.moveTo(projected[i].x, projected[i].y); ctx.lineTo(projected[j].x, projected[j].y); ctx.strokeStyle = colorLine; ctx.stroke(); }
         }
       }
-
-      // Draw nodes
-      projected.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.5 * p.scale, 0, Math.PI * 2);
-        ctx.fillStyle = colorNode;
-        ctx.fill();
-      });
-
-      requestAnimationFrame(rotatePoints);
+      projected.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 2 * p.scale, 0, Math.PI * 2); ctx.fillStyle = colorNode; ctx.fill(); });
+      requestAnimationFrame(renderCanvas);
     }
-    rotatePoints();
+    renderCanvas();
 
-    // IntersectionObserver to fade in cards as you scroll (Apple-style)
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('active');
-        }
-      });
-    }, { threshold: 0.15 });
+    // ===== DASHBOARD LOGIC =====
+    let carbonHistory = [];
+    const maxHistoryPoints = 25;
+    let lastCarbonVal = null, lastQueueVal = null;
 
-    document.querySelectorAll('.story-card').forEach(card => observer.observe(card));
-
-    function scrollToDashboard() {
-      document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
-    }
+    function scrollToDashboard() { document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' }); }
 
     function addLog(text, type = 'info') {
       const win = document.getElementById('console');
-      const timeStr = new Date().toLocaleTimeString();
+      const ts = new Date().toLocaleTimeString();
       const item = document.createElement('div');
       item.className = 'log-item';
-      item.innerHTML = `<span class="log-ts">[${timeStr}]</span> <span class="log-label-${type}">${text}</span>`;
+      item.innerHTML = '<span class="log-ts">[' + ts + ']</span> <span class="log-label-' + type + '">' + text + '</span>';
       win.appendChild(item);
       win.scrollTop = win.scrollHeight;
     }
 
     function updateChart(history, threshold) {
       if (history.length < 2) return;
-      const width = 500;
-      const height = 120;
-      const minVal = 80;
-      const maxVal = 300;
-      const range = maxVal - minVal;
-
-      const threshY = height - ((threshold - minVal) / range) * height;
+      const w = 500, h = 120, minV = 80, maxV = 300, range = maxV - minV;
+      const threshY = h - ((threshold - minV) / range) * h;
       document.getElementById('thresh-line').setAttribute('y1', threshY);
       document.getElementById('thresh-line').setAttribute('y2', threshY);
-
-      let points = [];
-      const step = width / (maxHistoryPoints - 1);
-      
-      history.forEach((pt, i) => {
-        const offset = maxHistoryPoints - history.length;
-        const x = (i + offset) * step;
-        const y = height - ((pt.value - minVal) / range) * height;
-        points.push({x, y});
-      });
-
-      let pathD = 'M ' + points[0].x + ' ' + points[0].y;
-      for (let i = 1; i < points.length; i++) {
-        pathD += ' L ' + points[i].x + ' ' + points[i].y;
-      }
-      document.getElementById('chart-line-path').setAttribute('d', pathD);
-
-      let areaD = pathD + ' L ' + points[points.length - 1].x + ' ' + height + ' L ' + points[0].x + ' ' + height + ' Z';
-      document.getElementById('chart-area-path').setAttribute('d', areaD);
+      let pts = [];
+      const step = w / (maxHistoryPoints - 1);
+      history.forEach((pt, i) => { const offset = maxHistoryPoints - history.length; pts.push({ x: (i + offset) * step, y: h - ((pt.value - minV) / range) * h }); });
+      let d = 'M ' + pts[0].x + ' ' + pts[0].y;
+      for (let i = 1; i < pts.length; i++) d += ' L ' + pts[i].x + ' ' + pts[i].y;
+      document.getElementById('chart-line-path').setAttribute('d', d);
+      document.getElementById('chart-area-path').setAttribute('d', d + ' L ' + pts[pts.length - 1].x + ' ' + h + ' L ' + pts[0].x + ' ' + h + ' Z');
     }
 
     async function refresh() {
       try {
-        const [s, t] = await Promise.all([
-          fetch('/api/status').then(r => r.json()),
-          fetch('/api/tasks').then(r => r.json())
-        ]);
-
+        const [s, t] = await Promise.all([fetch('/api/status').then(r => r.json()), fetch('/api/tasks').then(r => r.json())]);
         carbon.textContent = s.carbon_intensity + ' g';
         threshold.textContent = s.carbon_threshold + ' g';
         queue.textContent = s.queue_depth;
         completed.textContent = s.completed;
-
-        // Dynamic visual flow states (Linear style timeline)
+        document.getElementById('t-carbon').textContent = s.carbon_intensity;
+        document.getElementById('t-threshold').textContent = s.carbon_threshold;
+        document.getElementById('t-queue').textContent = s.queue_depth;
+        document.getElementById('t-completed').textContent = s.completed;
         const isDirty = s.carbon_intensity > s.carbon_threshold;
         document.getElementById('flow-1').className = 'timeline-item timeline-active-ok';
         document.getElementById('flow-2').className = 'timeline-item ' + (isDirty ? 'timeline-active-warn' : 'timeline-active-ok');
         document.getElementById('flow-3').className = 'timeline-item ' + (isDirty ? 'timeline-active-warn' : 'timeline-active-ok');
         document.getElementById('flow-4').className = 'timeline-item ' + (isDirty ? '' : 'timeline-active-ok');
-
-        // Map colors of rotating canvas grid dynamically to local carbon states
-        if (isDirty) {
-          colorNode = 'rgba(239, 68, 68, 0.45)';
-          colorLine = 'rgba(239, 68, 68, 0.08)';
-        } else {
-          colorNode = 'rgba(16, 185, 129, 0.45)';
-          colorLine = 'rgba(16, 185, 129, 0.08)';
-        }
-
-        // Log checks
+        colorNode = isDirty ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)';
+        colorLine = isDirty ? 'rgba(239, 68, 68, 0.06)' : 'rgba(16, 185, 129, 0.06)';
         if (s.carbon_intensity !== lastCarbonVal) {
-          const modeStr = isDirty ? 'EXCEEDED (Deferred)' : 'CLEAN (Ready)';
-          const logType = isDirty ? 'warn' : 'ok';
-          addLog('[GRID] Intensity audit: ' + s.carbon_intensity + ' gCO2e/kWh - Status: ' + modeStr, logType);
-          
+          addLog('[GRID] Intensity audit: ' + s.carbon_intensity + ' gCO2e/kWh - Status: ' + (isDirty ? 'EXCEEDED (Deferred)' : 'CLEAN (Ready)'), isDirty ? 'warn' : 'ok');
           carbonHistory.push({ value: s.carbon_intensity });
           if (carbonHistory.length > maxHistoryPoints) carbonHistory.shift();
           updateChart(carbonHistory, s.carbon_threshold);
           lastCarbonVal = s.carbon_intensity;
         }
-
         if (s.queue_depth !== lastQueueVal && lastQueueVal !== null) {
-          if (s.queue_depth > lastQueueVal) {
-            addLog('[QUEUE] Cryptographic transaction buffered. Depth: ' + s.queue_depth, 'sys');
-          } else {
-            addLog('[WAL] Workload claimed. Committed SQLite transaction safely.', 'wal');
-          }
+          if (s.queue_depth > lastQueueVal) addLog('[QUEUE] Cryptographic transaction buffered. Depth: ' + s.queue_depth, 'sys');
+          else addLog('[WAL] Workload claimed. Committed SQLite transaction safely.', 'wal');
           lastQueueVal = s.queue_depth;
-        } else if (lastQueueVal === null) {
-          lastQueueVal = s.queue_depth;
-        }
-
-        // Render Table
+        } else if (lastQueueVal === null) lastQueueVal = s.queue_depth;
         const tasksContainer = document.getElementById('tasks');
         if (t.tasks && t.tasks.length) {
           tasksContainer.innerHTML = t.tasks.map((x, idx) => {
-            const statusClass = x.status === 'queued' ? 'status-queued' : (x.status === 'running' ? 'status-running' : 'status-completed');
+            const sc = x.status === 'queued' ? 'status-queued' : (x.status === 'running' ? 'status-running' : 'status-completed');
             const mockAlgs = ['ML-KEM-1024 (Key Exchange)', 'ML-DSA-87 (Digital Signature)', 'Falcon-1024 (Short Signature)'];
-            const algTag = x.name.indexOf('(') !== -1 ? x.name.substring(x.name.indexOf('(')+1, x.name.length-1) : mockAlgs[idx % 3];
-            const cleanName = x.name.indexOf('(') !== -1 ? x.name.substring(0, x.name.indexOf('(')).trim() : x.name;
-            
-            return '<div class="table-row"><div class="task-name">' + esc(cleanName) + '</div><div class="task-alg">' + algTag + '</div><div><span class="status-pill ' + statusClass + '">' + x.status + '</span></div></div>';
+            const alg = x.name.indexOf('(') !== -1 ? x.name.substring(x.name.indexOf('(') + 1, x.name.length - 1) : mockAlgs[idx % 3];
+            const cn = x.name.indexOf('(') !== -1 ? x.name.substring(0, x.name.indexOf('(')).trim() : x.name;
+            return '<div class="table-row"><div class="task-name">' + esc(cn) + '</div><div class="task-alg">' + alg + '</div><div><span class="status-pill ' + sc + '">' + x.status + '</span></div></div>';
           }).join('');
-        } else {
-          tasksContainer.innerHTML = '<div class="empty-state">No cryptographic workloads currently queued.</div>';
-        }
-
-      } catch (err) {
-        addLog('[ERR] Failed to pull control status: ' + err.message, 'warn');
-      }
+        } else tasksContainer.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:12px">No cryptographic workloads currently queued.</div>';
+      } catch (err) { addLog('[ERR] Failed to pull control status: ' + err.message, 'warn'); }
     }
 
-    function esc(x) {
-      return x.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    }
+    function esc(x) { return x.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
     async function enqueue(e) {
       e.preventDefault();
-      const input = document.getElementById('name');
-      const select = document.getElementById('algorithm');
+      const input = document.getElementById('name'), select = document.getElementById('algorithm');
       const rawName = input.value.trim();
       if (!rawName) return;
-
       const fullTaskName = rawName + ' (' + select.value + ')';
-
       try {
         addLog('[WAL] Requesting atomic transaction lock...', 'sys');
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Idempotency-Key': crypto.randomUUID()
-          },
-          body: JSON.stringify({ name: fullTaskName })
-        });
-        
-        if (res.ok) {
-          addLog('[QUEUE] Job "' + rawName + '" enqueued with unique token.', 'info');
-        } else {
-          const data = await res.json();
-          addLog('[ERR] Enqueue rejected: ' + (data.error || 'Server error'), 'warn');
-        }
+        const res = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ name: fullTaskName }) });
+        if (res.ok) addLog('[QUEUE] Job "' + rawName + '" enqueued with unique token.', 'info');
+        else { const data = await res.json(); addLog('[ERR] Enqueue rejected: ' + (data.error || 'Server error'), 'warn'); }
         input.value = '';
         refresh();
-      } catch (err) {
-        addLog('[ERR] Network error enqueuing workload: ' + err.message, 'warn');
-      }
+      } catch (err) { addLog('[ERR] Network error: ' + err.message, 'warn'); }
     }
 
-    // Seed historical grid intensity profiles
-    for (let i = 0; i < maxHistoryPoints; i++) {
-      carbonHistory.push({ value: 150 + Math.floor(Math.random() * 80) });
-    }
-
+    for (let i = 0; i < maxHistoryPoints; i++) carbonHistory.push({ value: 150 + Math.floor(Math.random() * 80) });
     refresh();
     setInterval(refresh, 5000);
   </script>
