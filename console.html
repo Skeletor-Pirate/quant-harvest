@@ -404,6 +404,105 @@
       background: rgba(245, 158, 11, 0.05) !important;
     }
     
+    /* Floating Video Avatar Guide */
+    .avatar-wrapper {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    
+    .avatar-bubble {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      transition: border-color 0.2s var(--easing), transform 0.2s var(--easing);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .avatar-bubble:hover {
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+    
+    .avatar-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .avatar-drawer {
+      width: 320px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      animation: slide-up 0.3s var(--easing);
+    }
+    
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .avatar-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    
+    .avatar-drawer-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+    
+    .avatar-close {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .avatar-close:hover {
+      color: var(--text);
+    }
+    
+    .avatar-speech {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+    }
+    
+    .avatar-hint {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    
     @media(max-width: 900px) {
       .layout-grid { grid-template-columns: 1fr; }
       .grid-stats { grid-template-columns: repeat(2, 1fr); }
@@ -621,6 +720,18 @@
         document.getElementById('flow-3').className = 'timeline-item ' + (isDirty ? 'timeline-active-warn' : 'timeline-active-ok');
         document.getElementById('flow-4').className = 'timeline-item ' + (isDirty ? '' : 'timeline-active-ok');
 
+        // Dynamic operator feedback
+        const speech = document.getElementById('avatarSpeech');
+        if (speech) {
+          if (isDirty) {
+            speech.innerHTML = "Grid intensity is high (" + s.carbon_intensity + " gCO2e/kWh). I have locked heavy post-quantum cryptographic queues and deferred executions to conserve grid energy.";
+            document.getElementById('avatarBubble').style.borderColor = 'var(--warning)';
+          } else {
+            speech.innerHTML = "Emissions are low (" + s.carbon_intensity + " gCO2e/kWh). The energy grid is clean. Claiming queue jobs and committing WAL transactions safely.";
+            document.getElementById('avatarBubble').style.borderColor = 'var(--success)';
+          }
+        }
+
         // Log checks
         if (s.carbon_intensity !== lastCarbonVal) {
           const modeStr = isDirty ? 'EXCEEDED (Deferred)' : 'CLEAN (Ready)';
@@ -708,6 +819,37 @@
 
     refresh();
     setInterval(refresh, 5000);
+
+    function toggleAvatar() {
+      const drawer = document.getElementById('avatarDrawer');
+      if (drawer.style.display === 'flex') {
+        drawer.style.display = 'none';
+      } else {
+        drawer.style.display = 'flex';
+      }
+    }
   </script>
+
+  <!-- Floating Avatar Assistant (Viggle AI Integration Hook) -->
+  <div class="avatar-wrapper">
+    <div class="avatar-drawer" id="avatarDrawer">
+      <div class="avatar-drawer-header">
+        <span class="avatar-drawer-title">Control Assistant</span>
+        <span class="avatar-close" onclick="toggleAvatar()">Hide</span>
+      </div>
+      <div class="avatar-speech" id="avatarSpeech">
+        Initializing operator feed...
+      </div>
+      <div class="avatar-hint">
+        <!-- TO INTEGRATE YOUR OWN VIGGLE AI CHARACTER VIDEO: Replace the video src below with your custom-rendered Viggle MP4 link -->
+        Tip: Feed loop rendered via Viggle AI character generator.
+      </div>
+    </div>
+    <div class="avatar-bubble" id="avatarBubble" onclick="toggleAvatar()" title="Open Assistant">
+      <video class="avatar-video" id="avatarVideo" loop muted autoplay playsinline>
+        <source src="https://assets.viggle.ai/jobs/job_582edde14bd4f754/output.mp4?verify=1786876644-TcUfGbkhL%2F2wIOqHtScdGT5%2FLTUfgFfwdywjJiiQGT0%3D" type="video/mp4">
+      </video>
+    </div>
+  </div>
 </body>
 </html>
