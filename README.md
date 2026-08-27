@@ -6,6 +6,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.20+-00ADD8.svg)](https://go.dev)
 [![Deploy to Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg)](https://quant-harvest.onrender.com)
 [![Blog](https://img.shields.io/badge/Blog-dev.to-0A0A0A.svg)](https://dev.to/skeletorpirate/why-we-need-to-schedule-post-quantum-cryptography-around-the-weather-2lhk)
+[![Blog](https://img.shields.io/badge/Blog-hashnode-2962FF.svg)](https://skeletor-pirate.hashnode.dev/why-we-need-to-schedule-post-quantum-cryptography-around-the-weather)
 
 > **Defer heavy ML-KEM / PQC batch jobs until the grid is cleanest. Go + SQLite (WAL) + Prometheus.**
 
@@ -148,7 +149,7 @@ Keywords: `green-computing`, `carbon-aware-computing`, `sustainable-devops`, `pq
 
 Star the repo if this is useful! Feedback on scheduler heuristics, carbon data sources (ElectricityMap, WattTime), and PQC integration (`pqc.go`) welcome.
 
-- **Read the blog:** https://dev.to/skeletorpirate/why-we-need-to-schedule-post-quantum-cryptography-around-the-weather-2lhk
+- **Read the blog:** [dev.to](https://dev.to/skeletorpirate/why-we-need-to-schedule-post-quantum-cryptography-around-the-weather-2lhk) · [Hashnode](https://skeletor-pirate.hashnode.dev/why-we-need-to-schedule-post-quantum-cryptography-around-the-weather)
 - **Live Demo:** https://quant-harvest.onrender.com
 - **Issues:** https://github.com/Skeletor-Pirate/quant-harvest/issues
 
