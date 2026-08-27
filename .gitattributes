@@ -1,0 +1,5 @@
+# Fix GitHub language detection: console is vendored, Go should be primary
+console.html linguist-vendored
+static/** linguist-vendored
+static/* linguist-vendored
+*.min.js linguist-vendored

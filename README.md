@@ -1,12 +1,21 @@
-# ⚡ Quant Harvest
+# ⚡ Quant Harvest — Carbon-Aware Scheduler for Post-Quantum Workloads
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/Skeletor-Pirate/quant-harvest)](https://goreportcard.com/report/github.com/Skeletor-Pirate/quant-harvest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Demo-Live_on_Render-purple.svg)](https://quant-harvest.onrender.com/)
+[![Go Version](https://img.shields.io/badge/Go-1.20+-00ADD8.svg)](https://go.dev)
+[![Deploy to Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg)](https://quant-harvest.onrender.com)
 
-**Quant Harvest** is a cloud-native, carbon-aware control-plane prototype designed for scheduling and executing computationally heavy post-quantum cryptography (PQC) workloads when the energy grid is cleanest.
+> **Defer heavy ML-KEM / PQC batch jobs until the grid is cleanest. Go + SQLite (WAL) + Prometheus.**
 
-It implements a bounded, deferred-execution queue that checks real-time carbon intensity against a user-defined threshold, dynamically pausing and resuming queue processing.
+**Quant Harvest** is a cloud-native, **carbon-aware control-plane** for scheduling computationally heavy **post-quantum cryptography (PQC)** workloads — ML-KEM (FIPS 203), bulk signing, encryption batches — when energy grid carbon intensity (gCO2e/kWh) is lowest.
+
+It implements a bounded, deferred-execution queue that polls real-time carbon intensity against a user-defined threshold (`200 gCO2e/kWh` default), dynamically **pausing and resuming** queue processing. Ideal for green computing, sustainable DevOps, and climate-tech infrastructure.
+
+**🎥 Live Demo:** https://quant-harvest.onrender.com — try `POST /api/tasks` and watch the carbon-aware scheduler defer at 260 gCO2e/kWh.
+
+<!-- Demo GIF: record 15s of console at https://quant-harvest.onrender.com and replace this -->
+<!-- ![Demo](docs/demo.gif) -->
 
 ---
 
@@ -22,9 +31,14 @@ It implements a bounded, deferred-execution queue that checks real-time carbon i
 
 ## 🛠️ Tech Stack & Architecture
 
-*   **Language**: Go 1.20+ (Standard library focused)
-*   **Database**: Embedded SQLite (using the modern pure-Go `modernc.org/sqlite` driver)
-*   **Observability**: Prometheus instrumentation + HTTP middleware hardening (CSP, nosniff, cache-control headers).
+*   **Language**: Go 1.20+ (Standard library focused — zero heavy framework)
+*   **Database**: Embedded SQLite (`modernc.org/sqlite` pure-Go driver) in **WAL mode** + busy timeouts for concurrent claim safety
+*   **Observability**: Prometheus (`/metrics` — `qharvest_task_queue_size`, `qharvest_carbon_intensity`) + `/healthz` `/readyz` + hardened headers (CSP, nosniff)
+*   **Deploy**: Dockerfile (multi-stage, distroless) + `deploy/kubernetes.yaml` + Render
+
+```
+Enqueue → SQLite WAL → Scheduler (tick 15s) → Carbon check (<200?) → Workers (concurrency 2) → Prometheus
+```
 
 ---
 
@@ -122,6 +136,20 @@ kubectl apply -f deploy/kubernetes.yaml
 > The current cryptographic boundary defined in `pqc.go` is an envelope representation for scheduling testing. Vetted implementations of ML-KEM/FIPS 203 standards must be imported into `pqc.go` before using this system in production cryptographic environments.
 
 ---
+
+## 🌿 Why Carbon-Aware PQC?
+
+Post-quantum algorithms (ML-KEM, Dilithium) are quantum-safe but **2-10x more CPU-intensive** than RSA/ECC. Bulk operations (document signing, backups) can spike carbon footprints. Quant Harvest lets you **harvest clean energy windows** instead of burning fossil-fueled compute — green computing meets quantum-safe security.
+
+Keywords: `green-computing`, `carbon-aware-computing`, `sustainable-devops`, `pqc`, `post-quantum-cryptography`, `ml-kem`, `climate-tech`, `golang-scheduler`
+
+## 🤝 Contributing & Community
+
+Star the repo if this is useful! Feedback on scheduler heuristics, carbon data sources (ElectricityMap, WattTime), and PQC integration (`pqc.go`) welcome.
+
+- **Issues:** https://github.com/Skeletor-Pirate/quant-harvest/issues
+- **Live Demo:** https://quant-harvest.onrender.com
+- **Blog post template:** `blog_post.md` | **Community kit:** `community_posts.md`
 
 ## 📄 License
 
